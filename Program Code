@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+import os
+import time
+import RPi.GPIO as GPIO
+from picamera import PiCamera
+
+# Configure GPIO pins for the buttons
+capture_button_pin = 16  # GPIO pin for capturing an image
+stop_button_pin = 26  # GPIO pin for stopping the code execution
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(capture_button_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(stop_button_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+camera = PiCamera()
+
+# Set camera resolution (adjust as needed)
+camera.resolution = (1920, 1080)
+
+# Start the camera preview
+camera.start_preview()
+
+# Wait for the camera to initialize
+time.sleep(2)
+
+# Set camera settings for automatic adjustments
+camera.awb_mode = 'sunlight'  # Set White Balance mode to 'sunlight' for a more neutral white balance
+camera.awb_gains = (1.5, 1.5)  # Slightly increase the white balance gains for a better color reproduction
+camera.exposure_mode = 'auto'  # Automatic Exposure
+camera.exposure_compensation = 2  # Adjust this value as needed
+
+# Additional camera settings (optional)
+camera.shutter_speed = 0  # Set to 0 for automatic shutter speed (recommended for studio lighting)
+camera.contrast = 20  # Adjust the contrast (0 for default)
+camera.brightness = 55  # Adjust the brightness (0-100)
+camera.saturation = 20  # Adjust the saturation (0 for default)
+camera.sharpness = 50  # Adjust the sharpness (0 for default)
+camera.iso = 100  # Adjust ISO setting to make the background look brighter
+
+image_counter = 1
+
+# USB mount path for saving images
+usb_mount_path = '/media/cytron/PISTDIO/ImgCpt'
+
+# Function to capture an image with a timestamp in the filename
+def usb_capture():
+    global image_counter
+    timestamp = time.strftime("%d%m%Y_%H%M%S")
+    image_path = os.path.join(usb_mount_path, 'test_{}_{}.png'.format(image_counter, timestamp))
+    camera.capture(image_path)
+    print(f"Image captured: {image_path}")
+    image_counter += 1
+
+def local_capture():
+    global image_counter
+    timestamp = time.strftime("%d%m%Y_%H%M%S")
+    folder_path = "/home/cytron/Desktop/PiStdio"
+    os.makedirs(folder_path, exist_ok=True)
+    image_path = os.path.join(folder_path, 'test_{}_{}.png'.format(image_counter, timestamp))
+    camera.capture(image_path)
+    print(f"Image captured: {image_path}")
+    image_counter += 1
+
+# Function to stop the code execution
+def stop_execution():
+    global execute
+    execute = False
+
+# Set the initial state for code execution
+execute = True
+
+# Wait for the buttons to perform actions
+try:
+    while execute:
+        # Check if a USB drive is connected
+        usb_drive_available = os.path.exists(usb_mount_path)
+
+        if usb_drive_available:
+            # USB drive is detected, save photos to USB drive
+            if GPIO.input(capture_button_pin) == GPIO.LOW:
+                usb_capture()
+                time.sleep(0.2)  # Wait for button debouncing
+        else:
+            # No USB drive detected, save photos to local storage
+            if GPIO.input(capture_button_pin) == GPIO.LOW:
+                local_capture()
+                time.sleep(0.2)  # Wait for button debouncing
+
+        if GPIO.input(stop_button_pin) == GPIO.LOW:
+            stop_execution()
+
+        time.sleep(0.1)  # Delay between button checks
+except KeyboardInterrupt:
+    pass
+
+# Stop the camera preview
+camera.stop_preview()
+
+# Clean up GPIO
+GPIO.cleanup()
