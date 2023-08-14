@@ -6,7 +6,9 @@ Connect your hardware respectively according to this tutorial:
 
 Enable Legacy Camera in your rpi-config.
 
-Copy and paste this code to run the Rpi Mini Studio: 
+Copy and paste the Program Code to run the Rpi Mini Studio
+
+This is the textfile of the program code to be downloaded: 
 [Rpi_Mini_Studio_Code.txt](https://github.com/Lcta03/Rpi-Mini-Studio/files/12331254/Rpi_Mini_Studio_Code.txt)
 
 Name your code file
